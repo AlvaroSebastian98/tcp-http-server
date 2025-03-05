@@ -31,8 +31,12 @@ func main() {
 		n, _ := conn.Read(buff)
 		req := utils.ParseRequest(strings.Split(string(buff[:n]), "\r\n"))
 		res := utils.BuildResponse(conn)
+		router := utils.BuildRouter(req)
 
-		go app.HandleRequest(conn, req, res)
+		go func ()  {
+			defer conn.Close()
+			app.HandleRequest(router, req, res)
+		}()
 	}
 
 }

@@ -1,62 +1,46 @@
 package app
 
 import (
-	// "fmt"
 	"main/utils"
-	"net"
 	"os"
 	"strings"
-	// "time"
 )
 
-func HandleRequest(conn net.Conn, req utils.HTTPRequest, res utils.HTTPResponse) {
+func HandleRequest(router utils.Router, req utils.HTTPRequest, res utils.HTTPResponse) {
 
-	defer conn.Close()
-
-	if req.Path == "/" {
+	router.Get("/", func(ctx utils.RouteContext) {
 		res.Send(200, "")
-		return
-	}
+	})
 
-	if req.Path == "/user-agent" {
+	router.Get("/user-agent", func(ctx utils.RouteContext) {
 		res.Headers["Content-Type"] = "text/plain"
 		res.Send(200, req.UserAgent)
-		return
-	}
+	})
 
 	// Prints in body
-	if strings.HasPrefix(req.Path , "/echo") {
-		path := strings.Split(strings.Replace(req.Path, "/echo", "", 1), "/")[1:]
+	router.Get("/echo/:txt", func(ctx utils.RouteContext) {
+		text := ctx.Params["txt"]
+		text, contentEncoding := utils.Compress(req, text)
 
-		if len(path) == 1 {
-			text := path[0]
-			text, contentEncoding := utils.Compress(req, text)
-
-			if len(contentEncoding) > 0 {
-				res.Headers["Content-Encoding"] = contentEncoding
-			}
-
-			res.Headers["Content-Type"] = "text/plain"
-			res.Send(200, text)
-			return
+		if len(contentEncoding) > 0 {
+			res.Headers["Content-Encoding"] = contentEncoding
 		}
 
-	}
-
+		res.Headers["Content-Type"] = "text/plain"
+		res.Send(200, text)
+	})
 
 	// Get a file
-	if req.Method == "GET" && strings.HasPrefix(req.Path , "/files") {
-		path := strings.Split(strings.Replace(req.Path, "/files", "", 1), "/")[1:]
+	router.Get("/files/:filename", func(ctx utils.RouteContext) {
 
-		if errCode, message := validateFilesParams(path); errCode >= 400 {
+		if errCode, message := validateFilesParams(ctx.Params["filename"]); errCode >= 400 {
 			res.Headers["Content-Type"] = "text/plain"
 			res.Send(errCode, message)
 			return
 		}
 
-		filename := path[0]
 		filePath := os.Args[2]
-		file, err := os.ReadFile(filePath + filename)
+		file, err := os.ReadFile(filePath + ctx.Params["filename"])
 		if err != nil {
 			res.Send(404, "")
 			return
@@ -64,28 +48,25 @@ func HandleRequest(conn net.Conn, req utils.HTTPRequest, res utils.HTTPResponse)
 
 		contentType := "application/octet-stream"
 
-		if (strings.HasSuffix(filename, ".html")) {
+		if (strings.HasSuffix(ctx.Params["filename"], ".html")) {
 			contentType = "text/html"
 		}
 
 		res.Headers["Content-Type"] = contentType
 		res.Send(200, string(file))
-		return
-	}
-
+	})
 
 	// Create a file
-	if req.Method == "POST" && strings.HasPrefix(req.Path , "/files") {
-		path := strings.Split(strings.Replace(req.Path, "/files", "", 1), "/")[1:]
+	router.Post("/files/:filename", func(ctx utils.RouteContext) {
 
-		if errCode, message := validateFilesParams(path); errCode >= 400 {
+		if errCode, message := validateFilesParams(ctx.Params["filename"]); errCode >= 400 {
 			res.Headers["Content-Type"] = "text/plain"
 			res.Send(errCode, message)
+			return
 		}
 
-		filename := path[0]
 		filePath := os.Args[2]
-		file, err := os.Create(filePath + filename)
+		file, err := os.Create(filePath + ctx.Params["filename"])
 		if err != nil {
 			res.Headers["Content-Type"] = "text/plain"
 			res.Send(400, "Error creating file")
@@ -96,15 +77,17 @@ func HandleRequest(conn net.Conn, req utils.HTTPRequest, res utils.HTTPResponse)
 		file.Write([]byte(req.Body))
 
 		res.Send(201, "")
-		return
-	}
+	})
 
-	res.Send(404, "")
+	router.Use("*", func (ctx utils.RouteContext)  {
+		// ctx.Status(404)
+		res.Send(404, "")
+	})
 
 }
 
 
-func validateFilesParams(path []string) (int, string) {
+func validateFilesParams(path string) (int, string) {
 
 	if len(path) == 0 {
 		code := 400
