@@ -3,13 +3,14 @@ package utils
 import (
 	"bytes"
 	"compress/gzip"
+	"main/http"
 	"strings"
 	"slices"
 )
 
 var supportedEncoding []string = []string{"gzip"}
 
-func Compress(req HTTPRequest, content string) (string, string) {
+func Compress(req http.HTTPRequest, content string) (string, string) {
 	var contentEncoding string
 
 	// If receive some compress encoding

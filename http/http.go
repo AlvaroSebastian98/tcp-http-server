@@ -1,4 +1,4 @@
-package utils
+package http
 
 import (
 	"strings"
@@ -20,7 +20,9 @@ type HTTPRequest struct {
 	AcceptEncoding string
 }
 
-func ParseRequest(request []string) HTTPRequest {
+func ParseRequest(requestBuffer []byte) HTTPRequest {
+
+	request := strings.Split(string(requestBuffer), "\r\n")
 
 	fmt.Printf("%#v\n", request)
 

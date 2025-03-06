@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"main/app"
-	"main/utils"
+	r "main/router"
 	"net"
 	"os"
-	"strings"
 	// "time"
 )
 
@@ -27,15 +26,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		buff := make([]byte, 1024)
-		n, _ := conn.Read(buff)
-		req := utils.ParseRequest(strings.Split(string(buff[:n]), "\r\n"))
-		res := utils.BuildResponse(conn)
-		router := utils.BuildRouter(req)
+		router := r.BuildRouter(conn)
 
 		go func ()  {
 			defer conn.Close()
-			app.HandleRequest(router, req, res)
+			app.HandleRequest(router)
 		}()
 	}
 
