@@ -10,7 +10,7 @@ import (
 func HandleRequest(router r.Router) {
 
 	router.Get("/", func(req r.Request, res r.Response) {
-		res.Send(200, "")
+		res.Send(200)
 	})
 
 	router.Get("/user-agent", func(req r.Request, res r.Response) {
@@ -43,7 +43,7 @@ func HandleRequest(router r.Router) {
 		filePath := os.Args[2]
 		file, err := os.ReadFile(filePath + req.Params["filename"])
 		if err != nil {
-			res.Send(404, "")
+			res.Send(404)
 			return
 		}
 
@@ -77,12 +77,12 @@ func HandleRequest(router r.Router) {
 		defer file.Close()
 		file.Write([]byte(req.Body))
 
-		res.Send(201, "")
+		res.Send(201)
 	})
 
 	router.Use("*", func (req r.Request, res r.Response)  {
 		// ctx.Status(404)
-		res.Send(404, "")
+		res.Send(404)
 	})
 
 }

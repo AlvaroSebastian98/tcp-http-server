@@ -61,7 +61,7 @@ func ParseRequest(requestBuffer []byte) HTTPRequest {
 }
 
 type HTTPResponse struct {
-	Send func(code int, body string)
+	Send func(code int, data ...string)
 	Headers map[string]string
 }
 
@@ -79,10 +79,12 @@ func BuildResponse(conn net.Conn) HTTPResponse {
 
 	httpResponse.Headers = make(map[string]string)
 
-	httpResponse.Send = func(code int, body string) {
+	httpResponse.Send = func(code int, data ...string) {
 		response := fmt.Sprintf("HTTP/1.1 %d %v\r\n", code, httpCode[code])
+		var body string
 
-		if len(body) > 0 {
+		if len(data) > 0 {
+			body = data[0]
 			httpResponse.Headers["Content-Length"] = strconv.Itoa(len([]byte(body)))
 		}
 
